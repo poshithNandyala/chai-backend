@@ -25,7 +25,35 @@ const uploadOnCloudinary = async (localFilePath) => {
         return null;
     }
 }
+const deleteFromCloudinary = async (link) => {
+    try {
+        if (!link) return null;
+
+        let publicId = link.replace("https://res.cloudinary.com/poshithcloud/image/upload/", "");
+        publicId = publicId.replace("http://res.cloudinary.com/poshithcloud/image/upload/", "");
+        publicId = publicId.split(".")[0];
+        publicId = publicId.split("/");
+        publicId.shift();
+        publicId = publicId.join("/");
+
+        // console.log("Extracted Public ID:", publicId);
+
+        if (!publicId) return null;
+
+        // Log Cloudinary config before calling destroy
+        // console.log("Cloudinary Config:", cloudinary.config());
+
+        // Call destroy
+        const response = await cloudinary.uploader.destroy(publicId, { invalidate: true });
+        // console.log("Delete Response:", response);
+
+        return response;
+    } catch (error) {
+        console.error("Error deleting on Cloudinary:", error.message || error);
+        return null;
+    }
+};
 
 
 
-export {uploadOnCloudinary}
+export {uploadOnCloudinary, deleteFromCloudinary}

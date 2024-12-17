@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.model.js"
-import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
 import mongoose from "mongoose";
@@ -297,6 +297,8 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     }
 
     //TODO: delete old image - assignment
+    let deleteLink = req.user?.avatar
+    const deletedImage = await deleteFromCloudinary(deleteLink)
 
     const avatar = await uploadOnCloudinary(avatarLocalPath)
 
@@ -314,11 +316,15 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
         },
         { new: true }
     ).select("-password")
-
+    let data = {
+        user,
+        deleteLink,
+        deletedImage
+    }
     return res
         .status(200)
         .json(
-            new ApiResponse(200, user, "Avatar image updated successfully")
+            new ApiResponse(200, data, "Avatar image updated successfully")
         )
 })
 
@@ -330,6 +336,10 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     }
 
     //TODO: delete old image - assignment
+    let deleteLink = req.user?.coverImage
+
+    const deletedImage = await deleteFromCloudinary(deleteLink)
+
 
 
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
@@ -347,12 +357,17 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
             }
         },
         { new: true }
-    ).select("-password")
-
+    ).select("-password");
+    
+    let data = {
+        user,
+        deleteLink,
+        deletedImage
+    }
     return res
         .status(200)
         .json(
-            new ApiResponse(200, user, "Cover image updated successfully")
+            new ApiResponse(200, data, "Cover image updated successfully")
         )
 })
 
