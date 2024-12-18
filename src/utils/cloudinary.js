@@ -25,34 +25,65 @@ const uploadOnCloudinary = async (localFilePath) => {
         return null;
     }
 }
+
 const deleteFromCloudinary = async (link) => {
     try {
-        if (!link) return null;
+        // If no link is provided, return an error response
+        if (!link) {
+            console.error("Error: No link provided for deletion.");
+            return { status: 'error', message: "No link provided for deletion." };
+        }
 
+        // Extract the public ID from the link (handling both image and video links).
         let publicId = link.replace("https://res.cloudinary.com/poshithcloud/image/upload/", "");
         publicId = publicId.replace("http://res.cloudinary.com/poshithcloud/image/upload/", "");
+        publicId = publicId.replace("https://res.cloudinary.com/poshithcloud/video/upload/", "");
+        publicId = publicId.replace("http://res.cloudinary.com/poshithcloud/video/upload/", "");
+
+        // Remove file extension from the publicId.
         publicId = publicId.split(".")[0];
-        publicId = publicId.split("/");
-        publicId.shift();
-        publicId = publicId.join("/");
 
-        // console.log("Extracted Public ID:", publicId);
+        // Ensure the publicId is formatted correctly (removing possible path components).
+        publicId = publicId.split("/").slice(1).join("/");
 
-        if (!publicId) return null;
+        // If publicId extraction fails, return an error message
+        if (!publicId) {
+            console.error("Error: Invalid URL - Cannot extract the public ID.");
+            return { status: 'error', message: "Invalid URL: Cannot extract the public ID." };
+        }
 
-        // Log Cloudinary config before calling destroy
-        // console.log("Cloudinary Config:", cloudinary.config());
+        // Determine the resource type: "image" or "video", based on the URL
+        const resourceType = link.includes("/image/") ? "image" : "video";
 
-        // Call destroy
-        const response = await cloudinary.uploader.destroy(publicId, { invalidate: true });
-        // console.log("Delete Response:", response);
+        // Attempt to delete the resource from Cloudinary
+        const response = await cloudinary.uploader.destroy(publicId, {
+            invalidate: true,        // Invalidate the cached URL after deletion
+            resource_type: resourceType  // Specify whether the resource is an image or video
+        });
 
-        return response;
+        // If the resource is not found, return a relevant message
+        if (response.result === 'not found') {
+            console.error(`Error: Resource with Public ID: ${publicId} could not be found on Cloudinary.`);
+            return { status: 'error', message: `Resource with Public ID: ${publicId} could not be found on Cloudinary.` };
+        }
+
+        // Return success if the resource was deleted successfully
+        return {
+            status: 'success',
+            message: `Resource with Public ID: ${publicId} has been successfully deleted.`,
+            data: response
+        };
+
     } catch (error) {
-        console.error("Error deleting on Cloudinary:", error.message || error);
-        return null;
+        // Log the error in case of an unexpected issue
+        console.error("Error deleting from Cloudinary:", error.message || error);
+        return {
+            status: 'error',
+            message: `Error deleting from Cloudinary: ${error.message || error}`
+        };
     }
 };
+
 
 
 
